@@ -1,0 +1,335 @@
+-------------------------------------------------------------Exercise_1-------------------------------------------------------------------------------------------
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity >=0.5.0 <0.8.0;
+
+//contract Factory {
+    // Empty contract as required by Exercise 1
+//}
+
+-------------------------------------------------------------Exercise_2-------------------------------------------------------------------------------------------
+//contract Factory {
+   // uint idDigits = 16;
+//}
+
+-------------------------------------------------------------Exercise_3-------------------------------------------------------------------------------------------
+//contract Factory {
+  //  uint idDigits = 16;
+    //uint idModulus = 10 ** idDigits;
+//}
+
+-------------------------------------------------------------Exercise_4-------------------------------------------------------------------------------------------
+//contract Factory {
+    //uint idDigits = 16;
+    //uint idModulus = 10 ** idDigits;
+
+    //struct Product {
+      //  string name;
+    //    uint id;
+  //  }
+//}
+
+-------------------------------------------------------------Exercise_5-------------------------------------------------------------------------------------------
+//contract Factory {
+   // uint idDigits = 16;
+   // uint idModulus = 10 ** idDigits;
+
+   // struct Product {
+    //    string name;
+   //     uint id;
+  //  }
+
+  //  Product[] public products;
+//}
+
+-------------------------------------------------------------Exercise_6-------------------------------------------------------------------------------------------
+
+   // Product[] public products;
+
+   // function createProduct(string memory _name, uint _id) private {
+       // products.push(Product(_name, _id));
+   // }
+//}
+
+-------------------------------------------------------------Exercise_7-------------------------------------------------------------------------------------------
+   // function _generateRandomId(string memory _str) private view returns (uint) {
+        // Will be filled in later
+    //}
+
+-------------------------------------------------------------Exercise_8-------------------------------------------------------------------------------------------
+//contract Factory {
+    //uint idDigits = 16;
+    //uint idModulus = 10 ** idDigits;
+
+
+//    struct Product {
+  //      string name;
+    //    uint id;
+    //}
+   // Product[] public products;
+
+    //function createProduct(string memory _name, uint _id) private {
+      //  products.push(Product(_name, _id));
+    //}
+
+    //function _generateRandomId(string memory _str) private view returns (uint) {
+      //  uint rand = uint(keccak256(abi.encodePacked(_str)));
+        //return rand % idModulus;
+    //}
+
+    //function createRandomProduct(string memory _name) public {
+      //  uint randId = _generateRandomId(_name);
+        //createProduct(_name, randId);
+    //}
+//}
+
+-------------------------------------------------------------Exercise_9-------------------------------------------------------------------------------------------
+/*contract Factory {
+    uint idDigits = 16;
+    uint idModulus = 10 ** idDigits;
+
+    struct Product {
+        string name;
+        uint id;
+    }
+
+    Product[] public products;
+
+    // Event declaration
+    event NewProduct(uint ArrayProductId, string name, uint id);
+
+    function createProduct(string memory _name, uint _id) private {
+        uint productId = uint(products.length - 1);
+        emit NewProduct(productId, _name, _id);
+    }
+
+    function _generateRandomId(string memory _str) private view returns (uint) {
+        uint rand = uint(keccak256(abi.encodePacked(_str)));
+        return rand % idModulus;
+    }
+
+    function createRandomProduct(string memory _name) public {
+        uint randId = _generateRandomId(_name);
+        createProduct(_name, randId);
+    }
+}
+*/
+
+-------------------------------------------------------------Exercise_10-------------------------------------------------------------------------------------------
+/*contract Factory {
+    uint idDigits = 16;
+    uint idModulus = 10 ** idDigits;
+
+    struct Product {
+        string name;
+        uint id;
+    }
+
+    Product[] public products;
+
+    // Mappings for ownership
+    mapping (uint => address) public productToOwner;
+    mapping (address => uint) ownerProductCount;
+
+    // Event declaration
+    event NewProduct(uint ArrayProductId, string name, uint id);
+
+    function createProduct(string memory _name, uint _id) private {
+        uint productId = products.length;
+        emit NewProduct(productId, _name, _id);
+    }
+
+    function _generateRandomId(string memory _str) private view returns (uint) {
+        uint rand = uint(keccak256(abi.encodePacked(_str)));
+        return rand % idModulus;
+    }
+
+    function createRandomProduct(string memory _name) public {
+        uint randId = _generateRandomId(_name);
+        createProduct(_name, randId);
+    }
+}*/
+
+-------------------------------------------------------------Exercise_11-------------------------------------------------------------------------------------------
+/*
+contract Factory {
+    uint idDigits = 16;
+    uint idModulus = 10 ** idDigits;
+
+    struct Product {
+        string name;
+        uint id;
+    }
+
+    Product[] public products;
+
+    // Mappings for ownership
+    mapping (uint => address) public productToOwner;
+    mapping (address => uint) ownerProductCount;
+
+    // Event declaration
+    event NewProduct(uint ArrayProductId, string name, uint id);
+
+    function createProduct(string memory _name, uint _id) private {
+        uint productId = products.length;
+        productToOwner[productId] = msg.sender;
+        ownerProductCount[msg.sender]++;
+        emit NewProduct(productId, _name, _id);
+    }
+
+    function _generateRandomId(string memory _str) private view returns (uint) {
+        uint rand = uint(keccak256(abi.encodePacked(_str)));
+        return rand % idModulus;
+    }
+
+    function createRandomProduct(string memory _name) public {
+        uint randId = _generateRandomId(_name);
+        createProduct(_name, randId);
+    }
+
+    // Function to reassign ownership manually
+    function Ownership(uint _productId) public {
+        productToOwner[_productId] = msg.sender;
+        ownerProductCount[msg.sender]++;
+    }
+}*/
+
+-------------------------------------------------------------Exercise_12-------------------------------------------------------------------------------------------
+
+/*contract Factory {
+    uint idDigits = 16;
+    uint idModulus = 10 ** idDigits;
+
+    struct Product {
+        string name;
+        uint id;
+    }
+
+    Product[] public products;
+
+    mapping (uint => address) public productToOwner;
+    mapping (address => uint) ownerProductCount;
+
+    event NewProduct(uint ArrayProductId, string name, uint id);
+
+    function createProduct(string memory _name, uint _id) private {
+        uint productId = products.length - 1;
+        productToOwner[productId] = msg.sender;
+        ownerProductCount[msg.sender]++;
+        emit NewProduct(productId, _name, _id);
+    }
+
+    function _generateRandomId(string memory _str) private view returns (uint) {
+        uint rand = uint(keccak256(abi.encodePacked(_str)));
+        return rand % idModulus;
+    }
+
+    function createRandomProduct(string memory _name) public {
+        uint randId = _generateRandomId(_name);
+        createProduct(_name, randId);
+    }
+
+    function Ownership(uint _productId) public {
+        productToOwner[_productId] = msg.sender;
+        ownerProductCount[msg.sender]++;
+    }
+
+    function getProductsByOwner(address _owner) external view returns (uint[] memory) {
+        uint counter = 0;
+        uint[] memory result = new uint[](ownerProductCount[_owner]);
+
+        for (uint i = 0; i < products.length; i++) {
+            if (productToOwner[i] == _owner) {
+                result[counter] = i;
+                counter++;
+            }
+        }
+
+        return result;
+    }
+}*/
+
+-------------------------------------------------------------Exercise_13-------------------------------------------------------------------------------------------
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract MyToken is ERC20 {
+    constructor(uint256 initialSupply) ERC20("MyToken", "MTK") {
+        _mint(msg.sender, initialSupply);
+    }
+
+-------------------------------------------------------------Exercise_14-------------------------------------------------------------------------------------------
+contract Factory {
+    // ... existing code ...
+
+    mapping (uint => uint) public age;  // userID -> age
+
+    modifier olderThan(uint _age, uint _userId) {
+        require(age[_userId] >= _age, "User is not old enough");
+        _;
+    }
+
+    function validationUsers(uint _userId) public view olderThan(18, _userId) {
+        // Function body intentionally left blank
+    }
+}
+
+
+-------------------------------------------------------------Exercise_15-------------------------------------------------------------------------------------------
+// SPDX-License-Identifier: Unlicensed
+pragma solidity 0.8.18;
+
+contract DemoContract {
+    
+    address public owner;
+
+    struct Receivers {
+        string name;
+        uint256 tokens;
+    }
+
+    mapping(address => Receivers) public users;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not the contract owner");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+        users[owner].tokens = 100; // Initial token supply to the owner
+    }
+
+    function double(uint _value) public pure returns (uint) {
+        return _value * 2;
+    }
+
+    function register(string memory _name) public {
+        users[msg.sender].name = _name;
+    }
+
+    function giveToken(address _receiver, uint256 _amount) public onlyOwner {
+        require(users[owner].tokens >= _amount, "Not enough tokens");
+        users[owner].tokens -= _amount;
+        users[_receiver].tokens += _amount;
+    }
+
+    // New function: Buy tokens by sending Ether
+    function buyToken() public payable {
+        require(msg.value >= 2 ether, "Minimum purchase: 1 token (2 Ether)");
+
+        uint256 tokensToBuy = msg.value / 2 ether;
+
+        require(users[owner].tokens >= tokensToBuy, "Owner has insufficient tokens");
+
+        users[owner].tokens -= tokensToBuy;
+        users[msg.sender].tokens += tokensToBuy;
+    }
+
+    // To check total Ether balance stored in the contract
+    function getContractBalance() public view returns (uint) {
+        return address(this).balance;
+    }
+}
