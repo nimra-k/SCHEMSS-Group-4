@@ -1,1 +1,77 @@
+//SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.10;
+contract HelloWorld {
+string public greet = "Hello World!";
+}
+
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.0;
+
+// Lab 6 – Exercises 1–12 Implementation
+contract Factory {
+
+    //  Exercise 2: This sets how many digits our product ID should have.
+    uint public idDigits = 16;
+
+    //  Exercise 3: We use this to ensure the random ID stays within 16 digits.
+    uint public idModulus = 10 ** idDigits;
+
+    //  Exercise 4: Struct represents the data for one product.
+    struct Product {
+        string name; // Product name
+        uint id;     // Unique product ID
+    }
+
+    //  Exercise 5: Array to store all products created.
+    Product[] public products;
+
+    //  Exercise 10: Mapping product index to the owner's wallet address.
+    mapping(uint => address) public productToOwner;
+
+    //  Exercise 10: Mapping to count how many products each user owns.
+    mapping(address => uint) public ownerProductCount;
+
+    //  Exercise 9: Event is triggered every time a product is created.
+    event NewProduct(uint ArrayProductId, string name, uint id);
+
+    //  Exercise 6 & 11: Private function to add a new product to the array.
+    // It emits the NewProduct event.
+    function _createProduct(string memory _name, uint _id) private {
+        // Add product to the array
+        products.push(Product(_name, _id));
+
+        // Get the ID of the newly added product (array index)
+        uint productId = products.length - 1;
+
+        // Trigger the event
+        emit NewProduct(productId, _name, _id);
+    }
+
+    //  Exercise 7: Private function to generate a random ID using keccak256 hash
+    function _generateRandomId(string memory _str) private view returns (uint) {
+        // Create a hash from input string
+        uint rand = uint(keccak256(abi.encodePacked(_str)));
+
+        // Keep it within the correct number of digits
+        return rand % idModulus;
+    }
+
+    //  Exercise 8 + 12: A user can call a public function to create a product.
+    function createRandomProduct(string memory _name) public {
+        // Generate a random ID from the name
+        uint randId = _generateRandomId(_name);
+
+        // Create the product
+        _createProduct(_name, randId);
+
+        //  Exercise 11: Assign ownership to the user who created the product
+        uint productId = products.length - 1;
+        productToOwner[productId] = msg.sender;
+
+        // Increment the count of products owned by the sender
+        ownerProductCount[msg.sender]++;
+    }
+}
+
+//    xercise - 13
 
