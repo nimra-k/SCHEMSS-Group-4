@@ -73,5 +73,112 @@ contract Factory {
     }
 }
 
-//    xercise - 13
+//    Exercise - 13
 
+// contracts/GLDToken.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract GLDToken is ERC20 {
+    constructor(uint256 initialSupply) ERC20("Gold", "GLD") {
+        _mint(msg.sender, initialSupply);
+    }
+}
+
+//Exercise - 14 
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.0;
+
+contract Exercise14 {
+
+    //  Mapping to store age of users based on a user ID (uint)
+    mapping(uint => uint) public age;
+
+    //  Modifier to check if the user's age is above or equal to required _age
+    modifier olderThan(uint _age, uint _userId) {
+        require(age[_userId] >= _age, "User is not old enough");
+        _; // Continue execution if condition is true
+    }
+
+    //  Function that uses the modifier to check if the user is at least 18
+    // This function does nothing inside — just acts as an access check.
+    function validationUsers(uint _userId) public view olderThan(18, _userId) {
+    }
+
+    //  A helper function to set age
+    function setAge(uint _userId, uint _age) public {
+        age[_userId] = _age;
+    }
+}
+
+
+
+
+///////////////////////////////Exercise - 15 ////////////////////////////////////////
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.18;
+
+contract DemoContract {
+    
+    //  Store the owner (deployer) of the contract
+    address public owner;
+
+    //  Struct to hold each user's name and token balance
+    struct Receivers {
+        string name;
+        uint256 tokens;
+    }
+
+    //  Map each user’s address to their data (name + token balance)
+    mapping(address => Receivers) public users;
+
+    //  Modifier that restricts access to the contract owner
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not the contract owner");
+        _;
+    }
+
+    //  Constructor: called only once when contract is deployed
+    constructor() {
+        owner = msg.sender;                // The deployer is the contract owner
+        users[owner].tokens = 100;         // Owner starts with 100 tokens
+    }
+
+    //  Function to double a number — just for practice
+    function double(uint _value) public pure returns (uint) {
+        return _value * 2;
+    }
+
+    //  Anyone can register with their name
+    function register(string memory _name) public {
+        users[msg.sender].name = _name;
+    }
+
+    //  Only the owner can give tokens to another user
+    function giveToken(address _receiver, uint256 _amount) public onlyOwner {
+        require(users[owner].tokens >= _amount, "Not enough tokens");
+        users[owner].tokens -= _amount;        // Take tokens from owner
+        users[_receiver].tokens += _amount;    // Give to receiver
+    }
+
+    //  Users can buy tokens — 1 token = 2 ETH
+    function buyToken() public payable {
+        require(msg.value >= 2 ether, "Minimum 2 ether required");
+
+        // Calculate how many tokens the user can buy
+        uint256 tokensToBuy = msg.value / 2 ether;
+
+        require(users[owner].tokens >= tokensToBuy, "Owner does not have enough tokens");
+
+        // Transfer tokens from owner to buyer
+        users[owner].tokens -= tokensToBuy;
+        users[msg.sender].tokens += tokensToBuy;
+    }
+
+    //  Show total ETH stored in the contract
+    function getContractBalance() public view returns (uint) {
+        return address(this).balance;
+    }
+}
