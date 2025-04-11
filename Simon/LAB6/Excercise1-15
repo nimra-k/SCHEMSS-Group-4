@@ -117,68 +117,69 @@ contract Exercise14 {
 
 
 ///////////////////////////////Exercise - 15 ////////////////////////////////////////
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.18;
+// SPDX-License-Identifier: Simon Wakpal
+pragma solidity ^0.8.0;
 
 contract DemoContract {
-    
-    //  Store the owner (deployer) of the contract
     address public owner;
+    uint public tokenPrice = 2 ether;
 
-    //  Struct to hold each user's name and token balance
-    struct Receivers {
+    struct Receiver {
         string name;
-        uint256 tokens;
+        uint tokens;
     }
 
-    //  Map each user’s address to their data (name + token balance)
-    mapping(address => Receivers) public users;
+    mapping(address => Receiver) public users;
 
-    //  Modifier that restricts access to the contract owner
+    // Track owner token balance
+    uint public ownerTokenBalance;
+
+    // Only owner modifier
     modifier onlyOwner() {
         require(msg.sender == owner, "Not the contract owner");
         _;
     }
 
-    //  Constructor: called only once when contract is deployed
-    constructor() {
-        owner = msg.sender;                // The deployer is the contract owner
-        users[owner].tokens = 100;         // Owner starts with 100 tokens
+    constructor(uint initialSupply) {
+        owner = msg.sender;
+        ownerTokenBalance = initialSupply;
     }
 
-    //  Function to double a number — just for practice
-    function double(uint _value) public pure returns (uint) {
-        return _value * 2;
+    function registerUser(string memory _name) public {
+        users[msg.sender] = Receiver(_name, 0);
     }
 
-    //  Anyone can register with their name
-    function register(string memory _name) public {
-        users[msg.sender].name = _name;
+    function getPrice(uint _amount) public view returns (uint) {
+        return _amount * tokenPrice;
     }
 
-    //  Only the owner can give tokens to another user
-    function giveToken(address _receiver, uint256 _amount) public onlyOwner {
-        require(users[owner].tokens >= _amount, "Not enough tokens");
-        users[owner].tokens -= _amount;        // Take tokens from owner
-        users[_receiver].tokens += _amount;    // Give to receiver
+    // returns the value in ether for readability
+    function getPriceInEther(uint _amount) public view returns (uint) {
+        return (_amount * tokenPrice) / 1 ether;
     }
 
-    //  Users can buy tokens — 1 token = 2 ETH
-    function buyToken() public payable {
-        require(msg.value >= 2 ether, "Minimum 2 ether required");
+    // Buy tokens by sending Ether (1 token = 2 Ether)
+    function buyToken(uint _amount) public payable {
+        require(bytes(users[msg.sender].name).length > 0, "User not registered");
+        require(msg.value >= _amount * tokenPrice, "Not enough Ether sent");
+        require(ownerTokenBalance >= _amount, "Not enough tokens available");
 
-        // Calculate how many tokens the user can buy
-        uint256 tokensToBuy = msg.value / 2 ether;
-
-        require(users[owner].tokens >= tokensToBuy, "Owner does not have enough tokens");
-
-        // Transfer tokens from owner to buyer
-        users[owner].tokens -= tokensToBuy;
-        users[msg.sender].tokens += tokensToBuy;
+        users[msg.sender].tokens += _amount;
+        ownerTokenBalance -= _amount;
     }
 
-    //  Show total ETH stored in the contract
+    // Get contract's ETH balance
     function getContractBalance() public view returns (uint) {
         return address(this).balance;
     }
+
+    // Allow owner to give tokens manually
+    function giveToken(address _receiver, uint256 _amount) public onlyOwner {
+        require(users[owner].tokens >= _amount, "Not enough tokens");
+        users[owner].tokens -= _amount;
+        users[_receiver].tokens += _amount;
+    }
+
+    // Allow Ether to be received
+    receive() external payable {}
 }
