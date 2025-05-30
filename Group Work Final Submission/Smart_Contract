@@ -1,0 +1,182 @@
+pragma solidity ^0.8.18;
+
+contract SCHEMSSWarranty {
+
+address public owner;
+uint public timeDifference;
+uint private constant twoYearPeriod = 63072000; // 2 years
+uint private constant bonusEligibility = 90 days;
+string private sA = "TEMP_HUM";
+string private sB = "GAS";
+string private sC = "FLAME";
+string[] public equipment = [sA, sB, sC];
+enum Status {
+    Installed,
+    Operational,
+    Faulty,
+    Confirmed_Fault,
+    Rectified
+}
+struct Installation {
+    string name;
+    string vessel;
+    address vesselAddress;
+    uint amount;
+    Status status;
+    uint installedAt;
+    bool valid;
+}
+Installation[] public install;
+mapping(string => uint256) public Price;
+mapping(address => uint) public uptimeStart;
+mapping(address => bool) public bonusClaimed;
+bool private locked;
+modifier onlyOwner() {
+    require(msg.sender == owner, "Not contract owner");
+    _;
+}
+modifier noReentrancy() {
+    require(!locked, "Reentrancy detected");
+    locked = true;
+    _;
+    locked = false;
+}
+event Notify(string vessel, address user, string message);
+event DeviceInstalled(string name, address indexed vessel);
+event FaultReported(string name, address indexed vessel);
+event FaultConfirmed(string name, address indexed vessel);
+event BonusAwarded(address indexed recipient, uint amount);
+event RefundIssued(address indexed vessel, uint amount);
+event WarrantyExpired(string name, address indexed vessel);
+constructor() {
+    owner = msg.sender;
+    Price[sA] = 3 ether;
+    Price[sB] = 5 ether;
+    Price[sC] = 4 ether;
+}
+function installDevice(string memory _name, string memory _vessel, address _vesselAddress) private {
+    install.push(Installation({
+        name: _name,
+        vessel: _vessel,
+        vesselAddress: _vesselAddress,
+        amount: Price[_name],
+        status: Status.Installed,
+        installedAt: block.timestamp,
+        valid: true
+    }));
+    emit DeviceInstalled(_name, _vesselAddress);
+}
+function vesselToInstall(string memory _vessel, address _vesselAddress) public payable {
+    require(msg.value >= getTotalPrice(), "Insufficient payment");
+    require(uptimeStart[_vesselAddress] == 0, "Devices already installed for this vessel");
+for (uint i = 0; i < equipment.length; i++) {
+    installDevice(equipment[i], _vessel, _vesselAddress);
+}
+    uptimeStart[_vesselAddress] = block.timestamp;
+}
+function updateDeviceStatus(uint _index, Status _status) public onlyOwner {
+    Installation storage dev = install[_index];
+    dev.status = _status;
+    emit Notify(dev.vessel, dev.vesselAddress, string(abi.encodePacked(dev.name, " status updated")));
+}
+function reportFault(uint _index) public {
+    Installation storage dev = install[_index];
+    require(msg.sender == dev.vesselAddress, "Only device owner can report");
+    require(dev.status == Status.Operational, "Can only report fault from Operational state");
+    dev.status = Status.Faulty;
+    bonusClaimed[dev.vesselAddress] = true; // disqualify bonus on fault
+    emit FaultReported(dev.name, msg.sender);
+}
+function confirmFault(uint _index) public onlyOwner {
+    Installation storage dev = install[_index];
+    require(dev.status == Status.Faulty, "Device not reported as faulty");
+    dev.status = Status.Confirmed_Fault;
+    emit FaultConfirmed(dev.name, dev.vesselAddress);
+}
+function checkWarranty(uint _index) public returns (bool) {
+    Installation storage dev = install[_index];
+    timeDifference = block.timestamp - dev.installedAt;
+    if (timeDifference > twoYearPeriod) {
+        dev.valid = false;
+        emit WarrantyExpired(dev.name, dev.vesselAddress);
+    }
+    return dev.valid;
+}
+function issueRefund(uint _index) public onlyOwner noReentrancy {
+    Installation storage dev = install[_index];
+    require(dev.status == Status.Confirmed_Fault, "Fault not confirmed");
+    require(dev.valid, "Warranty expired");
+    require(address(this).balance >= dev.amount, "Insufficient balance");
+dev.valid = false;
+(bool sent, ) = dev.vesselAddress.call{value: dev.amount}("");
+require(sent, "Refund failed");
+    emit RefundIssued(dev.vesselAddress, dev.amount);
+}
+function claimBonus() public noReentrancy {
+    require(!bonusClaimed[msg.sender], "Bonus already claimed or disqualified");
+    require(uptimeStart[msg.sender] > 0, "Not registered");
+    require(block.timestamp - uptimeStart[msg.sender] >= bonusEligibility, "Bonus not yet eligible");
+uint bonusAmount = 1 ether;
+require(address(this).balance >= bonusAmount, "Insufficient contract balance");
+bonusClaimed[msg.sender] = true;
+(bool sent, ) = payable(msg.sender).call{value: bonusAmount}("");
+require(sent, "Bonus transfer failed");
+    emit BonusAwarded(msg.sender, bonusAmount);
+}
+function identifyDevice(uint _index) public view returns (
+    string memory name,
+    string memory vessel,
+    address vesselAddress,
+    Status status,
+    bool valid
+) {
+    Installation storage dev = install[_index];
+    return (dev.name, dev.vessel, dev.vesselAddress, dev.status, dev.valid);
+}
+function getInstallationsByVessel(address _vessel) public view returns (Installation[] memory) {
+    uint count = 0;
+    for (uint i = 0; i < install.length; i++) {
+        if (install[i].vesselAddress == _vessel) {
+            count++;
+        }
+    }
+    Installation[] memory result = new Installation[](count);
+    uint j = 0;
+    for (uint i = 0; i < install.length; i++) {
+        if (install[i].vesselAddress == _vessel) {
+            result[j] = install[i];
+            j++;
+        }
+    }
+    return result;
+}
+function getTotalPrice() private view returns (uint256) {
+    return Price[sA] + Price[sB] + Price[sC];
+}
+function getTotalPriceInEther() public view returns (uint256) {
+    return getTotalPrice() / 1 ether;
+}
+function payForDevice() public payable {
+    uint256 amount = getTotalPrice();
+    require(msg.value >= amount, "Insufficient Ether sent");
+(bool sent, ) = owner.call{value: amount}("");
+require(sent, "Transfer to owner failed");
+    if (msg.value > amount) {
+        uint256 excessRefund = msg.value - amount;
+        (sent, ) = msg.sender.call{value: excessRefund}("");
+        require(sent, "Excess refund failed");
+    }
+}
+function withdraw() public onlyOwner {
+    payable(owner).transfer(address(this).balance);
+}
+function getBalance() public view onlyOwner returns (uint) {
+    return address(this).balance;
+}
+receive() external payable {
+    revert("Direct payments not allowed");
+}
+    fallback() external payable {
+        revert("Fallback call not allowed");
+    }
+}
